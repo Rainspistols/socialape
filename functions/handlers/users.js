@@ -110,8 +110,8 @@ exports.addUserDetails = (req, res) => {
       return res.status(500).json({ error: err.code });
     });
 };
-// Get own user details
 
+// Get own user details
 exports.getAuthenticatedUser = (req, res) => {
   let userData = {};
   db.doc(`/users/${req.user.handle}`)
