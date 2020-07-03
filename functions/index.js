@@ -19,6 +19,8 @@ const {
   uploadImage,
   addUserDetails,
   getAuthenticatedUser,
+  getUserDetails,
+  markNotificationsRead,
 } = require('./handlers/users');
 
 //Scream routes
@@ -36,6 +38,8 @@ app.post('/login', login);
 app.post('/user/image', FBAuth, uploadImage);
 app.post('/user', FBAuth, addUserDetails);
 app.get('/user', FBAuth, getAuthenticatedUser);
+app.get('/user/:handle', getUserDetails);
+app.post('/notifications', FBAuth, markNotificationsRead);
 
 exports.api = functions.region('europe-west3').https.onRequest(app);
 
@@ -47,7 +51,7 @@ exports.createNotificationOnLike = functions
       .get()
       .then((doc) => {
         if (doc.exists) {
-          return db.doc(`/notifications/${spanshot.id}`).set({
+          return db.doc(`/notifications/${snapshot.id}`).set({
             createdAt: new Date().toISOString(),
             recipient: doc.data().userHandle,
             sender: snapshot.data().userHandle,
@@ -66,7 +70,22 @@ exports.createNotificationOnLike = functions
       });
   });
 
-exports.createNotificationOncomment = functions
+exports.deleteNotificationOnUnlike = functions
+  .region('europe-west3')
+  .firestore.document('likes/{id}')
+  .onDelete((snapshot) => {
+    db.doc(`/notifications/${snapshot.id}`)
+      .delete()
+      .then(() => {
+        return;
+      })
+      .catch((err) => {
+        console.error(err);
+        return;
+      });
+  });
+
+exports.createNotificationOnComment = functions
   .region('europe-west3')
   .firestore.document('comments/{id}')
   .onCreate((snapshot) => {
@@ -74,7 +93,7 @@ exports.createNotificationOncomment = functions
       .get()
       .then((doc) => {
         if (doc.exists) {
-          return db.doc(`/notifications/${spanshot.id}`).set({
+          return db.doc(`/notifications/${snapshot.id}`).set({
             createdAt: new Date().toISOString(),
             recipient: doc.data().userHandle,
             sender: snapshot.data().userHandle,
